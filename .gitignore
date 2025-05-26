@@ -1,0 +1,19 @@
+/app/Storage/Cache/*
+/app/Storage/Logs/*
+/app/Storage/Writable/*
+
+/.idea
+/.vscode
+/.DS_Store
+
+/.env
+/.env.testing
+/.env.local
+
+# Ignore Composer vendor directory
+/vendor
+# Ignore Composer lock file
+/composer.lock
+
+# Don't ignore the .gitkeep files
+!*.gitkeep
