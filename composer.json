@@ -11,7 +11,8 @@
         "illuminate/database": "^12.15",
         "php-di/php-di": "^7.0",
         "nyholm/psr7-server": "^1.1",
-        "php-di/slim-bridge": "^3.4"
+        "php-di/slim-bridge": "^3.4",
+      "ext-pdo": "*"
     },
     "autoload": {
         "psr-4": {

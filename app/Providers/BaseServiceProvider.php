@@ -13,6 +13,7 @@ class BaseServiceProvider
         ControllerServiceProvider::class,
         MiddlewareServiceProvider::class,
         ServiceClassProvider::class,
+        TypeServiceProvider::class,
     ];
 
     public static function register(ContainerBuilder $containerBuilder, array $paths = []): void

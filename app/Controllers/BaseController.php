@@ -59,4 +59,9 @@ abstract class BaseController
     {
         return $response->withStatus(204);
     }
+
+    protected function notImplemented(Response $response, string $message = 'Not Implemented'): Response
+    {
+        return $this->error($response, $message, 501);
+    }
 }
