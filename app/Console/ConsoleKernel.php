@@ -32,22 +32,29 @@ class ConsoleKernel
     protected function createUser(array $argv): void
     {
         $email = $argv[2] ?? null;
-        $name = $argv[3] ?? 'Unnamed';
-        $roles = isset($argv[4]) ? explode(',', $argv[4]) : [];
+        $password = $argv[3] ?? null;
+        $name = $argv[4] ?? 'Unnamed';
+        $roles = isset($argv[5]) ? explode(',', $argv[5]) : [];
 
         if (!$email) {
-            echo "\nUsage: php cli.php make:user <email> [name] [roles]\n";
+            echo "\nUsage: php cli.php make:user <email> <password> [name] [roles] \n";
             return;
         }
 
         $type = $this->registry->get('user');
         $model = new Model($type, [
             'email' => $email,
+            'password' => password_hash($password, PASSWORD_DEFAULT),
             'name' => $name,
             'roles' => $roles,
             'is_active' => true,
             'created_at' => date('Y-m-d H:i:s'),
         ]);
+
+        if ($this->storage->exists($type, $email, 'email_address')) {
+            echo "\n❌ User with email '{$email}' already exists.\n";
+            return;
+        }
 
         $this->storage->save($model);
         echo "\n✅ User '{$email}' created.\n";

@@ -16,9 +16,9 @@ class DatabaseStorageHandler implements StorageBindingHandler
         return $binding->driver === 'database';
     }
 
-    public function fetch(StorageBinding $binding, mixed $id): ?Model
+    public function fetch(TypeDefinition $type, mixed $id): ?Model
     {
-        $stmt = $this->pdo->prepare("SELECT * FROM {$binding->tableOrSource} WHERE {$binding->idField} = :id LIMIT 1");
+        $stmt = $this->pdo->prepare("SELECT * FROM {$type->storage->tableOrSource} WHERE {$type->storage->idField} = :id LIMIT 1");
         $stmt->execute(['id' => $id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -27,35 +27,35 @@ class DatabaseStorageHandler implements StorageBindingHandler
         }
 
         $data = [];
-        foreach ($binding->mapping as $logical => $physical) {
+        foreach ($type->storage->mapping as $logical => $physical) {
             $data[$logical] = $row[$physical] ?? null;
         }
 
-        return new Model(new TypeDefinition($binding->tableOrSource, [], $binding), $data);
+        return new Model($type, $data);
     }
 
-    public function fetchAll(StorageBinding $binding): array
+    public function fetchAll(TypeDefinition $type): array
     {
-        $stmt = $this->pdo->query("SELECT * FROM {$binding->tableOrSource}");
+        $stmt = $this->pdo->query("SELECT * FROM {$type->storage->tableOrSource}");
         $results = [];
 
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $data = [];
-            foreach ($binding->mapping as $logical => $physical) {
+            foreach ($type->storage->mapping as $logical => $physical) {
                 $data[$logical] = $row[$physical] ?? null;
             }
-            $results[] = new Model(new TypeDefinition($binding->tableOrSource, [], $binding), $data);
+            $results[] = new Model($type, $data);
         }
 
         return $results;
     }
 
-    public function save(StorageBinding $binding, Model $model): bool
+    public function save(TypeDefinition $type, Model $model): bool
     {
         $data = $model->all();
         $mapped = [];
 
-        foreach ($binding->mapping as $logical => $physical) {
+        foreach ($type->storage->mapping as $logical => $physical) {
             $value = $data[$logical] ?? null;
 
             // Convert arrays to JSON for DB storage
@@ -69,15 +69,30 @@ class DatabaseStorageHandler implements StorageBindingHandler
         $columns = array_keys($mapped);
         $placeholders = array_map(fn($col) => ":$col", $columns);
 
-        $sql = "REPLACE INTO {$binding->tableOrSource} (" . implode(',', $columns) . ") VALUES (" . implode(',', $placeholders) . ")";
+        $sql = "REPLACE INTO {$type->storage->tableOrSource} (" . implode(',', $columns) . ") VALUES (" . implode(',', $placeholders) . ")";
         $stmt = $this->pdo->prepare($sql);
 
         return $stmt->execute($mapped);
     }
 
-    public function delete(StorageBinding $binding, mixed $id): bool
+    public function delete(TypeDefinition $type, mixed $id): bool
     {
-        $stmt = $this->pdo->prepare("DELETE FROM {$binding->tableOrSource} WHERE {$binding->idField} = :id");
+        $stmt = $this->pdo->prepare("DELETE FROM {$type->storage->tableOrSource} WHERE {$type->storage->idField} = :id");
         return $stmt->execute(['id' => $id]);
+    }
+
+    public function exists(TypeDefinition $type, mixed $id, mixed $field = null): bool
+    {
+        if($field === null) {
+            $field = $type->storage->idField;
+        }
+
+        if ($id === null) {
+            return false; // Cannot check existence without an ID
+        }
+
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM {$type->storage->tableOrSource} WHERE {$field} = :id");
+        $stmt->execute(['id' => $id]);
+        return (bool) $stmt->fetchColumn();
     }
 }

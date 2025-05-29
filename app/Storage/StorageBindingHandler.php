@@ -8,9 +8,11 @@ interface StorageBindingHandler
 {
     public function supports(StorageBinding $binding): bool;
 
-    public function fetch(StorageBinding $binding, mixed $id): ?Model;
+    public function fetch(TypeDefinition $type, mixed $id): ?Model;
 
-    public function save(StorageBinding $binding, Model $model): bool;
+    public function save(TypeDefinition $type, Model $model): bool;
 
-    public function delete(StorageBinding $binding, mixed $id): bool;
+    public function delete(TypeDefinition $type, mixed $id): bool;
+
+    public function exists(TypeDefinition $type,  mixed $id, mixed $field): bool;
 }

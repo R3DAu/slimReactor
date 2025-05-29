@@ -17,3 +17,4 @@
 
 # Don't ignore the .gitkeep files
 !*.gitkeep
+/storage/
