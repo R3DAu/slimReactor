@@ -3,7 +3,7 @@ namespace App\Types;
 
 use App\Storage\StorageBinding;
 
-readonly class ApiClientTypeDefinition extends TypeDefinition
+class ApiClientTypeDefinition extends TypeDefinition
 {
     public function __construct()
     {

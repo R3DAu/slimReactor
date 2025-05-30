@@ -4,7 +4,7 @@ namespace App\Types;
 
 use App\Storage\StorageBinding;
 
-readonly class RoleTypeDefinition extends TypeDefinition
+class RoleTypeDefinition extends TypeDefinition
 {
     public function __construct()
     {

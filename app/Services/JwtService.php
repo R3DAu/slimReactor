@@ -16,10 +16,11 @@ class JwtService
 
     public function __construct(
         protected StorageManager $storage,
-        protected TypeDefinition $userType
+        protected TypeDefinition $userType,
+        protected SettingsService $settingsService
     )
     {
-        $jwtSecret = $_ENV['JWT_SECRET'] ?? null;
+        $jwtSecret = $this->settingsService->get('JWT_SECRET') ?? null;
         if (!$jwtSecret || !str_starts_with($jwtSecret, 'base64:')) {
             throw new RuntimeException("Invalid JWT secret format");
         }

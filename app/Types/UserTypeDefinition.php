@@ -4,7 +4,7 @@ namespace App\Types;
 
 use App\Storage\StorageBinding;
 
-readonly class UserTypeDefinition extends TypeDefinition
+class UserTypeDefinition extends TypeDefinition
 {
     public function __construct()
     {

@@ -14,7 +14,8 @@
         "php-di/slim-bridge": "^3.4",
       "ext-pdo": "*",
         "firebase/php-jwt": "^6.11",
-        "slim/psr7": "^1.7"
+        "slim/psr7": "^1.7",
+      "ext-openssl": "*"
     },
     "autoload": {
         "psr-4": {

@@ -18,7 +18,7 @@ readonly class PermissionCheckMiddleware
 
     public function __construct(
         protected ContainerInterface $container,
-        protected string $requiredPermission
+        protected string $requiredPermission = ''
     )
     {
         $this->jwtService = $this->container->get(JwtService::class);

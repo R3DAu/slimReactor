@@ -3,7 +3,7 @@ namespace App\Types;
 
 use App\Types\FieldType;
 
-readonly class TypeDefinition
+class TypeDefinition
 {
     public function __construct(
         public string $type,

@@ -44,6 +44,11 @@ class TypeModelController extends BaseController implements CrudControllerInterf
     {
         $data = (array) json_decode((string) $request->getBody(), true);
         $typeDef = $this->registry->get($type);
+
+        if(empty($data)) {
+            return $this->error($response, 'No data provided');
+        }
+
         $model = new \App\Types\Model($typeDef, $data);
 
         $this->storage->save($model);

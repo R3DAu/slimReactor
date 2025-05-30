@@ -20,7 +20,7 @@ class FlexibleAuthMiddleware implements MiddlewareInterface
 
     public function __construct(
         protected ContainerInterface $container,
-        protected string $requiredDomain // e.g. 'admin', 'user', etc.
+        protected string $requiredDomain = '' // e.g. 'admin', 'user', etc.
     )
     {
         $this->jwtService = $this->container->get(JwtService::class);

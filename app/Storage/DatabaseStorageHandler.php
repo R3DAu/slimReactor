@@ -2,14 +2,20 @@
 
 namespace App\Storage;
 
+use App\Services\EncryptionService;
 use App\Types\Model;
+use App\Types\SettingTypeDefinition;
 use App\Types\TypeDefinition;
 use PDO;
 use PDOException;
 
 class DatabaseStorageHandler implements StorageBindingHandler
 {
-    public function __construct(protected PDO $pdo) {}
+    protected EncryptionService $encryption;
+
+    public function __construct(protected PDO $pdo) {
+        $this->encryption = new EncryptionService();
+    }
 
     public function supports(StorageBinding $binding): bool
     {
@@ -26,6 +32,11 @@ class DatabaseStorageHandler implements StorageBindingHandler
             return null;
         }
 
+        //let's decrypt the value if this is a SettingTypeDefinition
+        if ($type instanceof SettingTypeDefinition && isset($row['encrypted']) && $row['encrypted']) {
+            $row['value'] = $this->encryption->decrypt($row['value']);
+        }
+
         $data = [];
         foreach ($type->storage->mapping as $logical => $physical) {
             $data[$logical] = $row[$physical] ?? null;
@@ -38,10 +49,16 @@ class DatabaseStorageHandler implements StorageBindingHandler
     {
         $stmt = $this->pdo->query("SELECT * FROM {$type->storage->tableOrSource}");
         $results = [];
+        $hasEncyption = $type instanceof SettingTypeDefinition;
 
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $data = [];
             foreach ($type->storage->mapping as $logical => $physical) {
+                // Handle decryption if applicable
+                if ($hasEncyption && isset($row['encrypted']) && $row['encrypted'] && $logical == 'value') {
+                    $row[$physical] = $this->encryption->decrypt($row[$physical]);
+                }
+
                 $data[$logical] = $row[$physical] ?? null;
             }
             $results[] = new Model($type, $data);
@@ -54,6 +71,16 @@ class DatabaseStorageHandler implements StorageBindingHandler
     {
         $data = $model->all();
         $mapped = [];
+        $hasEncyption = $type instanceof SettingTypeDefinition;
+
+        //check if it exists
+        if(isset($data[$type->storage->idField]) && $this->exists($type, $data[$type->storage->idField])) {
+            // If it exists, we will update it
+            $mapped[$type->storage->idField] = $data[$type->storage->idField];
+        } else {
+            // Otherwise, we will insert a new record
+            unset($data[$type->storage->idField]); // Remove ID for insert
+        }
 
         foreach ($type->storage->mapping as $logical => $physical) {
             $value = $data[$logical] ?? null;
@@ -63,13 +90,31 @@ class DatabaseStorageHandler implements StorageBindingHandler
                 $value = json_encode($value);
             }
 
+            // Handle encryption if applicable
+            if ($hasEncyption && ($data['encrypted'] ?? false) && $logical == 'value') {
+                $value = $this->encryption->encrypt($value);
+            }
+
             $mapped[$physical] = $value;
         }
 
         $columns = array_keys($mapped);
         $placeholders = array_map(fn($col) => ":$col", $columns);
 
-        $sql = "REPLACE INTO {$type->storage->tableOrSource} (" . implode(',', $columns) . ") VALUES (" . implode(',', $placeholders) . ")";
+        // 1. Insert portion
+        $sql = "INSERT INTO {$type->storage->tableOrSource} (" . implode(',', $columns) . ") VALUES (" . implode(',', $placeholders) . ")";
+
+        // 2. Update portion
+        $updateClauses = [];
+        foreach ($columns as $column) {
+            // Skip primary key if you don't want to update it (optional)
+            if ($column === 'id') continue;
+
+            $updateClauses[] = "{$column} = VALUES({$column})";
+        }
+
+        $sql .= " ON DUPLICATE KEY UPDATE " . implode(', ', $updateClauses);
+
         $stmt = $this->pdo->prepare($sql);
 
         return $stmt->execute($mapped);
