@@ -27,9 +27,6 @@ class SettingsService
         $setting = reset($record);
         if ($setting) {
             $value = $setting->get('value');
-            if ($setting->get('encrypted')) {
-                $value = $this->encryption->decrypt($value);
-            }
             return $this->cache[$key] = $value;
         }
 
@@ -41,13 +38,12 @@ class SettingsService
     public function set(string $key, string $value, string $scope = 'global', bool $encrypt = false): void
     {
         $type = new SettingTypeDefinition();
-        $encryptedValue = $encrypt ? $this->encryption->encrypt($value) : $value;
 
         // Upsert logic depending on your StorageManager
         $this->storage->save(new \App\Types\Model($type, [
             'scope' => $scope,
             'key_name' => $key,
-            'value' => $encryptedValue,
+            'value' => $value,
             'encrypted' => $encrypt
         ]));
     }

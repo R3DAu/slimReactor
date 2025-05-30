@@ -45,9 +45,24 @@ class DatabaseStorageHandler implements StorageBindingHandler
         return new Model($type, $data);
     }
 
-    public function fetchAll(TypeDefinition $type): array
+    public function fetchAll(TypeDefinition $type, array $filters = [], int $limit = 100, int $offset = 0): array
     {
-        $stmt = $this->pdo->query("SELECT * FROM {$type->storage->tableOrSource}");
+        $sql = "SELECT * FROM {$type->storage->tableOrSource}";
+        $parameters = [];
+
+        if(!empty($filters)) {
+            $conditions = [];
+            foreach ($filters as $field => $value) {
+                $conditions[] = "{$field} = :{$field}";
+                $parameters[':' . $field] = $value;
+            }
+            $sql .= " WHERE " . implode(' AND ', $conditions);
+        }
+
+        $sql .= " LIMIT $limit OFFSET $offset";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($parameters);
         $results = [];
         $hasEncyption = $type instanceof SettingTypeDefinition;
 

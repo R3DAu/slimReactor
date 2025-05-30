@@ -24,6 +24,11 @@ class EncryptionService
         $data = base64_decode($encoded);
         $iv = substr($data, 0, 16);
         $cipher = substr($data, 16);
-        return openssl_decrypt($cipher, 'aes-256-cbc', $this->key, 0, $iv);
+        $decoded = @openssl_decrypt($cipher, 'aes-256-cbc', $this->key, 0, $iv);
+        if(!$decoded){
+            $decoded = $encoded;
+        }
+
+        return  $decoded;
     }
 }
