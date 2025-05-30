@@ -25,8 +25,32 @@ class ConsoleKernel
         match ($command) {
             'make:user' => $this->createUser($argv),
             'make:role' => $this->createRole($argv),
+            'make:hmac-key' => $this->createHmacKey($argv),
             default => $this->unknownCommand($command)
         };
+    }
+
+    protected function createHmacKey(array $argv): void
+    {
+        $name = $argv[2] ?? null;
+        $userId = $argv[3] ?? null;
+
+        if (!$name || !$userId) {
+            echo "\nUsage: php cli.php make:hmac-key <name> <user_id>\n";
+            return;
+        }
+
+        $type = $this->registry->get('api_client');
+        $model = new Model($type, [
+            'name' => $name,
+            'api_key' => bin2hex(random_bytes(16)),
+            'api_secret' => bin2hex(random_bytes(32)),
+            'user_id' => (int)$userId,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $this->storage->save($model);
+        echo "\n✅ HMAC key for '{$name}' created.\n";
     }
 
     protected function createUser(array $argv): void

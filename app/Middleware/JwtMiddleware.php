@@ -2,8 +2,8 @@
 
 namespace App\Middleware;
 
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
+use App\Services\JwtService;
+use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\RequestHandlerInterface as Handler;
 use Psr\Http\Server\MiddlewareInterface;
@@ -12,22 +12,13 @@ use Slim\Psr7\Response;
 
 class JwtMiddleware implements MiddlewareInterface
 {
-    private string $secret;
+    protected JwtService $jwtService;
 
-    public function __construct()
+    public function __construct(
+        protected ContainerInterface $container,
+    )
     {
-        $jwtSecret = $_ENV['JWT_SECRET'] ?? null;
-        if (!$jwtSecret) {
-            throw new \RuntimeException("JWT secret not set in environment variables");
-        }
-        // Decode the secret from environment variables
-        $jwtSecret = explode("base64:", $jwtSecret);
-        if (count($jwtSecret) !== 2 || empty($jwtSecret[1])) {
-            throw new \RuntimeException("Invalid JWT secret format");
-        }
-        $jwtSecret = base64_decode($jwtSecret[1]);
-
-        $this->secret = $jwtSecret;
+        $this->jwtService = $this->container->get(JwtService::class);
     }
 
     public function process(Request $request, Handler $handler): ResponseInterface
@@ -41,10 +32,14 @@ class JwtMiddleware implements MiddlewareInterface
         $token = $matches[1];
 
         try {
-            $decoded = JWT::decode($token, new Key($this->secret, 'HS256'));
+            $user = $this->jwtService->validateAndFetchUser($token);
+            $decoded = $this->jwtService->decodeToken($token);
+
+            $request = $request->withAttribute('user', $user);
             $request = $request->withAttribute('jwt', $decoded);
+
             return $handler->handle($request);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return $this->unauthorizedResponse("Invalid token: " . $e->getMessage());
         }
     }

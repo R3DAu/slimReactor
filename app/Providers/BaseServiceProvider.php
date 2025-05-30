@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Config\App;
 use DI\ContainerBuilder;
 
 class BaseServiceProvider
@@ -14,6 +15,7 @@ class BaseServiceProvider
         MiddlewareServiceProvider::class,
         ServiceClassProvider::class,
         TypeServiceProvider::class,
+        AppServiceProvider::class,
     ];
 
     public static function register(ContainerBuilder $containerBuilder, array $paths = []): void

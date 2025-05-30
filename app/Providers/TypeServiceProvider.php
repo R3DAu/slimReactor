@@ -27,6 +27,8 @@ class TypeServiceProvider implements ServiceProviderInterface
                 ]);
             },
 
+
+
             TypeRegistry::class => create(TypeRegistry::class),
 
             DatabaseStorageHandler::class => autowire(DatabaseStorageHandler::class),

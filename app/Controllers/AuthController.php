@@ -40,6 +40,40 @@ class AuthController extends BaseController
         ]);
     }
 
+    public function m2m(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $user = $request->getAttribute('api_user');
+
+        return $this->success($response, [
+            'user' => [
+                'id' => $user->get('id'),
+                'email' => $user->get('email'),
+                'roles' => $user->get('roles') ?? []
+            ]
+        ]);
+    }
+
+    public function flex(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $user = $request->getAttribute('api_user');
+
+        //get the user from API key or JWT
+        if (!$user) {
+            $jwt = $request->getAttribute('jwt');
+            if ($jwt) {
+                $user = $this->storage->fetch($this->registry->get('user'), $jwt->sub);
+            }
+        }
+
+        return $this->success($response, [
+            'user' => [
+                'id' => $user->get('id'),
+                'email' => $user->get('email'),
+                'roles' => $user->get('roles') ?? []
+            ]
+        ]);
+    }
+
     public function login(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $body = (array) $request->getParsedBody();
