@@ -10,6 +10,7 @@ use App\Services\HmacService;
 use App\Services\JwtService;
 use App\Services\PermissionService;
 use App\Services\SettingsService;
+use App\Services\XeroService;
 use App\Types\UserTypeDefinition;
 use App\Storage\StorageManager;
 use DI\ContainerBuilder;
@@ -72,6 +73,10 @@ class AppServiceProvider
 
             HaloService::class => function ($c) {
                 return new HaloService($c->get(SettingsService::class));
+            },
+
+            XeroService::class => function ($c) {
+                return new XeroService($c->get(SettingsService::class));
             },
         ]);
     }
