@@ -11,6 +11,11 @@ use App\Services\SettingsService;
 use App\Types\UserTypeDefinition;
 use App\Storage\StorageManager;
 use DI\ContainerBuilder;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Cache\Psr16Cache;
+use Psr\SimpleCache\CacheInterface;
+
 
 class AppServiceProvider
 {
@@ -51,6 +56,12 @@ class AppServiceProvider
                 return new HmacService(
                     $container->get(StorageManager::class),
                 );
+            },
+
+            CacheInterface::class => function () {
+                //$adapter = new ArrayAdapter(); // In-memory for dev
+                $adapter = new FilesystemAdapter(); // saves to /var/cache or system temp
+                return new Psr16Cache($adapter);
             },
         ]);
     }

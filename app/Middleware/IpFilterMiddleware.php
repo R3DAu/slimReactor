@@ -4,6 +4,8 @@ namespace App\Middleware;
 
 use App\Services\SettingsService;
 use Closure;
+use Monolog\Logger;
+use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -12,10 +14,17 @@ use Slim\Routing\RouteContext;
 
 class IpFilterMiddleware
 {
+    protected Logger $logger;
+    protected SettingsService $settingsService;
+
     public function __construct(
-        protected SettingsService $settingsService,
+        protected ContainerInterface $container,
         protected string $scope = '*:*' // default fallback scope
-    ) {}
+    )
+    {
+        $this->logger = $this->container->get(Logger::class);
+        $this->settingsService = $this->container->get(SettingsService::class);
+    }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -52,7 +61,11 @@ class IpFilterMiddleware
         }
 
         // Log denied attempt
-        error_log("[IP DENIED] $clientIp tried accessing scope '{$this->scope}'");
+        $this->logger->warning('IP address denied', [
+            'ip' => $clientIp,
+            'scope' => $this->scope,
+            'route' => $route ? $route->getPattern() : 'unknown',
+        ]);
 
         return $this->unauthorized("IP address '$clientIp' is not allowed for scope '{$this->scope}'.");
     }

@@ -6,6 +6,8 @@ use DI\ContainerBuilder;
 use Slim\Factory\AppFactory;
 use Monolog\Logger;
 use DI\Bridge\Slim\Bridge as SlimBridge;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Symfony\Component\Cache\Psr16Cache;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -36,8 +38,8 @@ $app = AppFactory::create();
 // ✅ Use Slim-Bridge to create app with container injection
 $app = SlimBridge::create($container);
 
-$logger = $app->getContainer()->get(Logger::class);
-$logger->debug('Slim Framework is starting up...');
+/*$logger = $app->getContainer()->get(Logger::class);
+$logger->debug('Slim Framework is starting up...');*/
 
 (require APPPATH . '/Bootstrap.php')($app);
 

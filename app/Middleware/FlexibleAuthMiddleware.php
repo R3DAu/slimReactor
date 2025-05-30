@@ -5,6 +5,7 @@ namespace App\Middleware;
 use App\Services\HmacService;
 use App\Services\JwtService;
 use App\Services\PermissionService;
+use Monolog\Logger;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -17,6 +18,7 @@ class FlexibleAuthMiddleware implements MiddlewareInterface
     protected JwtService $jwtService;
     protected HmacService $hmacService;
     protected PermissionService $permissionService;
+    protected Logger $logger;
 
     public function __construct(
         protected ContainerInterface $container,
@@ -26,6 +28,7 @@ class FlexibleAuthMiddleware implements MiddlewareInterface
         $this->jwtService = $this->container->get(JwtService::class);
         $this->hmacService = $this->container->get(HmacService::class);
         $this->permissionService = $this->container->get(PermissionService::class);
+        $this->logger = $this->container->get(Logger::class);
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -50,6 +53,12 @@ class FlexibleAuthMiddleware implements MiddlewareInterface
                 $decoded = $this->jwtService->decodeToken($token);
                 $request = $request->withAttribute('jwt', $decoded)->withAttribute('user', $user);
             } catch (\Throwable $e) {
+                // Log the error
+                $this->logger->error('JWT validation failed', [
+                    'ip' => $request->getServerParams()['REMOTE_ADDR'] ?? 'unknown',
+                    'headers' => $request->getHeaders(),
+                    'error' => $e->getMessage(),
+                ]);
                 return $this->unauthorized($e->getMessage());
             }
         }
@@ -68,9 +77,22 @@ class FlexibleAuthMiddleware implements MiddlewareInterface
                     ->withAttribute('api_client', $apiKeyRecord)
                     ->withAttribute('api_user', $user);
             } catch (\Throwable $e) {
+                // Log the error
+                $this->logger->error('HMAC validation failed', [
+                    'ip' => $request->getServerParams()['REMOTE_ADDR'] ?? 'unknown',
+                    'headers' => $request->getHeaders(),
+                    'error' => $e->getMessage(),
+                ]);
+
                 return $this->unauthorized($e->getMessage());
             }
         } else {
+            //log result
+            $this->logger->warning('Unauthorized access attempt', [
+                'ip' => $request->getServerParams()['REMOTE_ADDR'] ?? 'unknown',
+                'headers' => $request->getHeaders(),
+            ]);
+
             return $this->unauthorized("Missing Authorization or HMAC headers");
         }
 
@@ -93,6 +115,14 @@ class FlexibleAuthMiddleware implements MiddlewareInterface
 
         // Check permission
         if (!$this->permissionService->hasPermission($permissions, $requiredPermission)) {
+            // Log unauthorized access
+            $this->logger->warning('Unauthorized access attempt', [
+                'ip' => $request->getServerParams()['REMOTE_ADDR'] ?? 'unknown',
+                'user_id' => $user->id ?? null,
+                'api_key_id' => $apiKeyRecord->id ?? null,
+                'required_permission' => $requiredPermission,
+                'permissions' => $permissions,
+            ]);
             return $this->unauthorized("Insufficient permissions for $requiredPermission");
         }
 

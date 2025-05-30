@@ -4,6 +4,8 @@ use App\Middleware\JsonErrorHandler;
 use Slim\App;
 use Slim\Middleware\ErrorMiddleware;
 use App\Config\App as AppConfig;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Symfony\Component\Cache\Psr16Cache;
 
 return function (App $app): void {
     // Grab the config from the container (bound in index.php)

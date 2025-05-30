@@ -3,7 +3,10 @@
 use App\Controllers\TypeModelController;
 use App\Middleware\FlexibleAuthMiddleware;
 use App\Middleware\IpFilterMiddleware;
+use App\Middleware\RateLimitMiddleware;
 use App\Services\SettingsService;
+use App\Support\MiddlewareStackHandler;
+use Psr\SimpleCache\CacheInterface;
 use Slim\App;
 use Slim\Routing\RouteContext;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -47,42 +50,15 @@ return function (App $app): void {
 
         // Instantiate middlewares
         $auth = new FlexibleAuthMiddleware($container, $permission);
-        $ipFilter = new IpFilterMiddleware($container->get(SettingsService::class), "{$type}:*");
+        $ipFilter = new IpFilterMiddleware($container, "{$type}:*");
+        $rateLimit = new RateLimitMiddleware(
+            $container,
+            100, // requests per minute
+            60, // time window in seconds
+            "{$type}:*"
+        );
 
         // Chain the middlewares
-        return (new MiddlewareStackHandler([$ipFilter, $auth], $handler))->handle($request);
+        return (new MiddlewareStackHandler([$rateLimit, $ipFilter, $auth], $handler))->handle($request);
     });
-
-    class MiddlewareStackHandler implements RequestHandlerInterface
-    {
-        private array $middlewares;
-        private RequestHandlerInterface $finalHandler;
-
-        public function __construct(array $middlewares, RequestHandlerInterface $finalHandler)
-        {
-            $this->middlewares = $middlewares;
-            $this->finalHandler = $finalHandler;
-        }
-
-        public function handle(Request $request): ResponseInterface
-        {
-            $handler = array_reduce(
-                array_reverse($this->middlewares),
-                fn($next, $middleware) => new class($middleware, $next) implements RequestHandlerInterface {
-                    public function __construct(
-                        private $middleware,
-                        private RequestHandlerInterface $next
-                    ) {}
-
-                    public function handle(Request $request): ResponseInterface
-                    {
-                        return $this->middleware->process($request, $this->next);
-                    }
-                },
-                $this->finalHandler
-            );
-
-            return $handler->handle($request);
-        }
-    }
 };
