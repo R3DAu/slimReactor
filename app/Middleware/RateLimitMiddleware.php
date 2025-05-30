@@ -63,9 +63,15 @@ class RateLimitMiddleware implements MiddlewareInterface
 
         // If authenticated via JWT or API key, prefer user or key ID
         $user = $request->getAttribute('user');
-        $apiKey = $request->getAttribute('api_key');
+        $apiUser = $request->getAttribute('api_user');
+        $id = $ip;
 
-        $id = $user['id'] ?? ($apiKey['id'] ?? $ip);
+        if($user){
+            $id = $user->get('id') ?? $ip;
+        } elseif ($apiUser) {
+            $id = $apiUser->get('id') ?? $ip;
+        }
+
         $scopePart = $this->scope ?? '*:*';
 
         $key = hash('sha256', "{$scopePart}:{$id}");

@@ -15,7 +15,9 @@
       "ext-pdo": "*",
         "firebase/php-jwt": "^6.11",
         "slim/psr7": "^1.7",
-      "ext-openssl": "*"
+      "ext-openssl": "*",
+        "phpmailer/phpmailer": "^6.10",
+        "guzzlehttp/guzzle": "^7.9"
     },
     "autoload": {
         "psr-4": {

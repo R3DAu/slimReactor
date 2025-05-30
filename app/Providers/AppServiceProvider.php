@@ -3,7 +3,9 @@
 
 namespace App\Providers;
 
+use App\Services\EmailService;
 use App\Services\EncryptionService;
+use App\Services\HaloService;
 use App\Services\HmacService;
 use App\Services\JwtService;
 use App\Services\PermissionService;
@@ -62,6 +64,14 @@ class AppServiceProvider
                 //$adapter = new ArrayAdapter(); // In-memory for dev
                 $adapter = new FilesystemAdapter(); // saves to /var/cache or system temp
                 return new Psr16Cache($adapter);
+            },
+
+            EmailService::class => function ($c) {
+                return new EmailService($c->get(SettingsService::class));
+            },
+
+            HaloService::class => function ($c) {
+                return new HaloService($c->get(SettingsService::class));
             },
         ]);
     }
